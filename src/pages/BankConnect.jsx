@@ -69,7 +69,7 @@ export default function BankConnect() {
       const res = await fetch('/api/consent/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vua })
+        body: JSON.stringify({ vua, bankId: selectedBank })
       });
 
       const data = await res.json();
