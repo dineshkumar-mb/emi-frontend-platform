@@ -49,6 +49,8 @@ export default function Dashboard({ onSendToCalculator }) {
   const [aiInsightLoading, setAiInsightLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [healthData, setHealthData] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
 
   // Form states
   const [isModalOpen, setIsModalOpen]     = useState(false);
@@ -68,6 +70,10 @@ export default function Dashboard({ onSendToCalculator }) {
   // Telegram
   const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || '-5128959794');
   const [telegramStatus, setTelegramStatus] = useState('');
+
+  // WhatsApp
+  const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsappNumber || '');
+  const [whatsappStatus, setWhatsappStatus] = useState('');
 
   // SMS Detection — dual-engine state
   const [isSmsModalOpen, setIsSmsModalOpen]   = useState(false);
@@ -91,10 +97,34 @@ export default function Dashboard({ onSendToCalculator }) {
   const [prepayResult, setPrepayResult] = useState(null);
   const [prepayLoading, setPrepayLoading] = useState(false);
 
+  // Notification Center States
+  const [notificationLogs, setNotificationLogs] = useState([]);
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    emiReminders: true,
+    paymentAlerts: true,
+    overdueAlerts: true,
+    monthlyReports: true,
+    financialTips: false
+  });
+  const [notificationAnalytics, setNotificationAnalytics] = useState({
+    sentToday: 0,
+    successRate: 100,
+    failedCount: 0,
+    topTemplate: 'None'
+  });
+  const [autopayLoanId, setAutopayLoanId] = useState('');
+  const [autopayStatus, setAutopayStatus] = useState('success');
+  const [autopayReason, setAutopayReason] = useState('');
+  const [autopaySimulating, setAutopaySimulating] = useState(false);
+  const [autopayMessage, setAutopayMessage] = useState('');
+
   const activeParsed = activeEngine === 'ai' && aiParsed ? aiParsed : parsedSms;
 
   useEffect(() => {
-    if (user) setTelegramChatId(user.telegramChatId || '-5128959794');
+    if (user) {
+      setTelegramChatId(user.telegramChatId || '-5128959794');
+      setWhatsappNumber(user.whatsappNumber || '');
+    }
   }, [user]);
 
 
@@ -181,16 +211,79 @@ export default function Dashboard({ onSendToCalculator }) {
     runValidation();
   }, [smsMatchedLoan, activeParsed, activeEngine]);
 
+  // ── Notification Center Helpers ──
+  const fetchNotificationData = async () => {
+    try {
+      const [rPrefs, rLogs, rAnalytics] = await Promise.all([
+        fetch('/api/notifications/preferences'),
+        fetch('/api/notifications/logs'),
+        fetch('/api/notifications/analytics')
+      ]);
+      if (rPrefs.ok) {
+        const data = await rPrefs.json();
+        setNotificationPrefs(data);
+      }
+      if (rLogs.ok) setNotificationLogs(await rLogs.json());
+      if (rAnalytics.ok) setNotificationAnalytics(await rAnalytics.json());
+    } catch (err) {
+      console.error('Error fetching notification center data:', err);
+    }
+  };
+
+  const handleTogglePreference = async (key) => {
+    const updated = {
+      ...notificationPrefs,
+      [key]: !notificationPrefs[key]
+    };
+    setNotificationPrefs(updated);
+    try {
+      const r = await fetch('/api/notifications/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated)
+      });
+      if (r.ok) {
+        const data = await r.json();
+        if (data.preferences) setNotificationPrefs(data.preferences);
+      }
+    } catch (err) {
+      console.error('Failed to update notification preference:', err);
+    }
+  };
+
+  const handleSimulateAutopay = async (e) => {
+    e.preventDefault();
+    if (!autopayLoanId) return;
+    setAutopaySimulating(true);
+    setAutopayMessage('');
+    try {
+      const r = await fetch(`/api/notifications/simulate-autopay/${autopayLoanId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: autopayStatus, reason: autopayStatus === 'failure' ? autopayReason : '' })
+      });
+      const data = await r.json();
+      setAutopayMessage(data.message || 'Simulation triggered.');
+      fetchNotificationData();
+    } catch (err) {
+      setAutopayMessage('Failed to trigger autopay simulation.');
+    } finally {
+      setAutopaySimulating(false);
+    }
+  };
+
   // ── Data Fetching ──────────────────────────────────────────────────────────
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [rLoans, rPayments, rStats, rNotifications] = await Promise.all([
+      setHealthLoading(true);
+      const [rLoans, rPayments, rStats, rNotifications, rHealth] = await Promise.all([
         fetch('/api/loans'),
         fetch('/api/loans/payments'),
         fetch('/api/loans/payment-history'),
-        fetch('/api/intelligence/notifications')
+        fetch('/api/intelligence/notifications'),
+        fetch('/api/intelligence/health-score')
       ]);
 
       if (rLoans.ok) setLoans(await rLoans.json());
@@ -200,11 +293,16 @@ export default function Dashboard({ onSendToCalculator }) {
         const data = await rNotifications.json();
         setNotifications(data.logs || []);
       }
+      if (rHealth.ok) {
+        setHealthData(await rHealth.json());
+      }
+      fetchNotificationData();
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Server connection lost.');
     } finally {
       setLoading(false);
+      setHealthLoading(false);
     }
   };
 
@@ -418,12 +516,62 @@ export default function Dashboard({ onSendToCalculator }) {
       else { const d = await r.json(); setTelegramStatus(d.message || 'Ping failed.'); }
     } catch { setTelegramStatus('Connection error.'); }
   };
-  const handleTriggerSweep = async () => {
-    setTelegramStatus('Running sweep...');
+  const handleTriggerSweep = async (source) => {
+    const setStatus = source === 'whatsapp' ? setWhatsappStatus : setTelegramStatus;
+    setStatus('Running sweep...');
     try {
       const r = await fetch('/api/loans/trigger-scheduler', { method: 'POST' });
-      if (r.ok) { const d = await r.json(); setTelegramStatus(d.message); } else setTelegramStatus('Scheduler run failed.');
-    } catch { setTelegramStatus('Network error.'); }
+      if (r.ok) { 
+        const d = await r.json(); 
+        setStatus(d.message); 
+        fetchNotificationData();
+      } else {
+        setStatus('Scheduler run failed.');
+      }
+    } catch { 
+      setStatus('Network error.'); 
+    }
+  };
+
+  // ── WhatsApp ──────────────────────────────────────────────────────────────
+
+  const handleSaveWhatsappNumber = async () => {
+    setWhatsappStatus('Saving...');
+    try {
+      const r = await fetch('/api/auth/whatsapp-number', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsappNumber }),
+      });
+      if (r.ok) {
+        setWhatsappStatus('WhatsApp number saved!');
+        refreshUser();
+        fetchNotificationData();
+      } else {
+        const d = await r.json();
+        setWhatsappStatus(d.message || 'Failed to update WhatsApp number.');
+      }
+    } catch {
+      setWhatsappStatus('Network connection error.');
+    }
+  };
+  const handleSendTestWhatsapp = async () => {
+    setWhatsappStatus('Pinging WhatsApp...');
+    try {
+      const r = await fetch('/api/loans/test-whatsapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ whatsappNumber }),
+      });
+      if (r.ok) {
+        setWhatsappStatus('Ping delivered! Check WhatsApp.');
+      } else {
+        const d = await r.json();
+        setWhatsappStatus(d.message || 'Ping failed.');
+      }
+    } catch {
+      setWhatsappStatus('Connection error.');
+    }
   };
 
   // ── Computed Stats ─────────────────────────────────────────────────────────
@@ -453,7 +601,21 @@ export default function Dashboard({ onSendToCalculator }) {
       for (const loan of activeLoans) {
         const nextDue = loan.nextDueDate ? new Date(loan.nextDueDate) : new Date();
         const emi = loan.emiAmount || (loan.outstandingBalance / 12) || 1;
-        const remainingMonths = Math.max(1, Math.ceil(loan.outstandingBalance / emi));
+        const annualRate = loan.interestRate || 0;
+        let remainingMonths = 1;
+
+        if (annualRate > 0) {
+          const r = annualRate / 12 / 100;
+          if (emi > loan.outstandingBalance * r) {
+            const remaining = Math.log(emi / (emi - loan.outstandingBalance * r)) / Math.log(1 + r);
+            remainingMonths = Math.max(1, Math.ceil(remaining));
+          } else {
+            remainingMonths = Math.max(1, Math.ceil(loan.outstandingBalance / emi));
+          }
+        } else {
+          remainingMonths = Math.max(1, Math.ceil(loan.outstandingBalance / emi));
+        }
+
         const closureDate = new Date(nextDue);
         closureDate.setMonth(closureDate.getMonth() + (remainingMonths - 1));
         if (closureDate > furthestClosureDate) {
@@ -559,6 +721,136 @@ export default function Dashboard({ onSendToCalculator }) {
         ))}
       </div>
 
+      {/* Financial Health Score Widget */}
+      {healthData && (
+        <div className="glass-panel animate-fade-in" style={{ padding: '24px', marginBottom: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+              <Activity size={18} color="var(--color-brand)" /> AI Financial Health Score
+            </h3>
+            <span style={{
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              background: ['Excellent', 'Good'].includes(healthData.rating) ? 'rgba(16, 185, 129, 0.08)' : healthData.rating === 'Average' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+              border: `1px solid ${['Excellent', 'Good'].includes(healthData.rating) ? 'rgba(16, 185, 129, 0.2)' : healthData.rating === 'Average' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+              color: ['Excellent', 'Good'].includes(healthData.rating) ? 'var(--color-success)' : healthData.rating === 'Average' ? 'var(--color-warning)' : 'var(--color-danger)',
+              padding: '4px 10px',
+              borderRadius: '20px'
+            }}>
+              {healthData.rating} Rating
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+            {/* Circular Gauge */}
+            <div style={{ flex: '0 0 130px', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <svg width="110" height="110" viewBox="0 0 100 100">
+                {/* Background circle */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke="rgba(255,255,255,0.03)"
+                  strokeWidth="8"
+                />
+                {/* Foreground circle with dashboard colors */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke={healthData.healthScore >= 80 ? 'url(#healthGradGreen)' : healthData.healthScore >= 50 ? 'url(#healthGradYellow)' : 'url(#healthGradRed)'}
+                  strokeWidth="8"
+                  strokeDasharray={`${2 * Math.PI * 40}`}
+                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - healthData.healthScore / 100)}`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                  style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+                />
+                {/* Definitions for Gradients */}
+                <defs>
+                  <linearGradient id="healthGradGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
+                  <linearGradient id="healthGradYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#f59e0b" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
+                  <linearGradient id="healthGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="100%" stopColor="#b91c1c" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style={{ position: 'absolute', textAlign: 'center' }}>
+                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-primary)' }}>{healthData.healthScore}</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block', marginTop: '-4px' }}>Index</span>
+              </div>
+            </div>
+
+            {/* Explanation & Recommendations */}
+            <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', gap: '14px', justifyContent: 'center' }}>
+              <div>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.6', margin: '0 0 8px 0' }}>
+                  {healthData.explanation}
+                </p>
+                {healthData.weights && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    <span>Dynamic weights allocated:</span>
+                    <span>EMI burden ({healthData.weights.emiBurdenWeight}%)</span>
+                    <span>·</span>
+                    <span>Emergency fund ({healthData.weights.emergencyFundWeight}%)</span>
+                    <span>·</span>
+                    <span>Savings ({healthData.weights.savingsRateWeight}%)</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Actionable recommendations list */}
+              {healthData.recommendations && healthData.recommendations.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-muted)', margin: 0 }}>AI Optimization Playbook</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {healthData.recommendations.map((rec, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '10px 12px',
+                        background: 'rgba(255,255,255,0.01)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        lineHeight: '1.45'
+                      }}>
+                        <span style={{
+                          fontSize: '0.65rem',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: rec.priority === 'High' ? 'rgba(239, 68, 68, 0.08)' : rec.priority === 'Medium' ? 'rgba(245, 158, 11, 0.08)' : 'rgba(99, 102, 241, 0.08)',
+                          color: rec.priority === 'High' ? 'var(--color-danger)' : rec.priority === 'Medium' ? 'var(--color-warning)' : 'var(--color-brand)',
+                          border: `1px solid ${rec.priority === 'High' ? 'rgba(239, 68, 68, 0.2)' : rec.priority === 'Medium' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(99, 102, 241, 0.2)'}`,
+                          flexShrink: 0
+                        }}>
+                          {rec.category || 'AI'}
+                        </span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{rec.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main content */}
       {loans.length === 0 ? (
         <div className="glass-panel" style={{ padding:'50px', textAlign:'center', margin:'40px 0' }}>
@@ -592,6 +884,10 @@ export default function Dashboard({ onSendToCalculator }) {
                       <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.75rem', color:'var(--text-secondary)', marginBottom:'4px' }}>
                         <span>Balance: {formatCurrency(loan.outstandingBalance, user?.geo || 'IN')}</span>
                         <span>Principal: {formatCurrency(loan.principal, user?.geo || 'IN')}</span>
+                      </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.75rem', color:'var(--text-secondary)', marginBottom:'4px' }}>
+                        <span>Total Interest: {formatCurrency((loan.emiAmount * loan.tenure) - loan.principal, user?.geo || 'IN')}</span>
+                        <span>Total Payment: {formatCurrency(loan.emiAmount * loan.tenure, user?.geo || 'IN')}</span>
                       </div>
                       <div className="progress-container">
                         <div className="progress-bar" style={{ width:`${Math.max(((loan.principal - loan.outstandingBalance) / loan.principal) * 100, 2)}%` }}></div>
@@ -774,22 +1070,195 @@ export default function Dashboard({ onSendToCalculator }) {
         </>
       )}
 
-      {/* Telegram */}
-      <div className="glass-panel" style={{ padding:'24px', marginTop:'30px' }}>
-        <h3 style={{ fontSize:'1.15rem', fontWeight:700, marginBottom:'10px', display:'flex', alignItems:'center', gap:'8px' }}>🔔 Telegram Notifications Link</h3>
-        <p style={{ color:'var(--text-secondary)', fontSize:'0.85rem', marginBottom:'16px', maxWidth:'800px' }}>Link your Telegram chat to receive reminders about upcoming dues. Create a bot via <strong>@BotFather</strong>, add the token to <code>.env</code> as <strong>TELEGRAM_BOT_TOKEN</strong>, then enter your Chat ID below.</p>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:'16px', alignItems:'flex-end' }}>
-          <div style={{ flex:'1 1 260px', display:'flex', flexDirection:'column', gap:'6px' }}>
-            <label className="form-label" style={{ fontSize:'0.75rem' }}>Telegram Chat ID</label>
-            <input type="text" className="form-input" placeholder="e.g. -5128959794" value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)}/>
+      {/* ── Notification Center & Automation Settings ── */}
+      <div className="glass-panel" style={{ padding: '24px', marginTop: '30px' }}>
+        <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Smartphone size={20} color="var(--color-brand)" /> Notification & Automation Center
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>Configure alerts, check delivery logs, simulate payments, and link channels.</p>
           </div>
-          <div className="telegram-actions" style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-            <button onClick={handleSaveTelegramId} className="btn btn-secondary">Save ID</button>
-            <button onClick={handleSendTestTelegram} className="btn btn-secondary" disabled={!telegramChatId}><Send size={14}/> Send Test Ping</button>
-            <button onClick={handleTriggerSweep} className="btn btn-secondary" style={{ borderColor:'var(--color-success)' }} disabled={!telegramChatId}><SendHorizontal size={14} color="var(--color-success)"/> Run Alerts Check</button>
+          <button onClick={fetchNotificationData} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <RefreshCw size={12} /> Sync Logs
+          </button>
+        </div>
+
+        {/* Analytics row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          {[
+            { label: 'Sent Today', value: notificationAnalytics.sentToday, sub: 'Total dispatches today', color: 'var(--text-primary)' },
+            { label: 'Success Rate', value: `${notificationAnalytics.successRate}%`, sub: 'Delivery success rate', color: 'var(--color-success)' },
+            { label: 'Failed Alerts', value: notificationAnalytics.failedCount, sub: 'Failed alert delivery attempts', color: notificationAnalytics.failedCount > 0 ? 'var(--color-danger)' : 'var(--text-muted)' },
+            { label: 'Top Template', value: (notificationAnalytics.topTemplate || 'None').replace(/_/g, ' '), sub: 'Most triggered alert', color: 'var(--color-brand)' }
+          ].map((card, idx) => (
+            <div key={idx} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', padding: '14px', borderRadius: '10px' }}>
+              <p style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{card.label}</p>
+              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: card.color, margin: '6px 0 2px' }}>{card.value}</h4>
+              <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{card.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+          {/* Settings and Channels Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Preferences Toggles */}
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>Preferences Toggles</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '12px' }}>
+                {[
+                  { key: 'emiReminders', label: 'EMI Reminders', desc: 'Upcoming payments due today/tomorrow' },
+                  { key: 'paymentAlerts', label: 'Payment Alerts', desc: 'EMI success & auto-pay alerts' },
+                  { key: 'overdueAlerts', label: 'Overdue Alerts', desc: 'Missed payments warning' },
+                  { key: 'monthlyReports', label: 'Monthly Summary', desc: 'Loan status summaries' },
+                  { key: 'financialTips', label: 'Smart Financial Tips', desc: 'AI-generated refinance & credit tips' }
+                ].map((pref) => (
+                  <div key={pref.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>{pref.label}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{pref.desc}</p>
+                    </div>
+                    <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '38px', height: '22px' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!notificationPrefs[pref.key]}
+                        onChange={() => handleTogglePreference(pref.key)}
+                        style={{ opacity: 0, width: 0, height: 0 }}
+                      />
+                      <span className="slider" style={{
+                        position: 'absolute',
+                        cursor: 'pointer',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: notificationPrefs[pref.key] ? 'var(--color-brand)' : '#334155',
+                        borderRadius: '34px',
+                        transition: '.3s'
+                      }}>
+                        <span className="slider-knob" style={{
+                          position: 'absolute',
+                          height: '16px', width: '16px',
+                          left: notificationPrefs[pref.key] ? '18px' : '4px',
+                          bottom: '3px',
+                          background: 'white',
+                          borderRadius: '50%',
+                          transition: '.3s'
+                        }}/>
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Channels Linking */}
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+              <h4 style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>Channel Connections</h4>
+              
+              {/* WhatsApp linking */}
+              <div style={{ marginTop: '12px', marginBottom: '16px' }}>
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>WhatsApp Number</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <input type="text" className="form-input" style={{ flex: 1 }} placeholder="e.g. +919876543210" value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} />
+                  <button onClick={handleSaveWhatsappNumber} className="btn btn-secondary btn-sm">Save</button>
+                  <button onClick={handleSendTestWhatsapp} className="btn btn-secondary btn-sm" disabled={!whatsappNumber}><Send size={12} /></button>
+                </div>
+                {whatsappStatus && <p style={{ fontSize: '0.7rem', color: whatsappStatus.includes('failed') ? 'var(--color-danger)' : 'var(--color-success)', marginTop: '4px' }}>{whatsappStatus}</p>}
+              </div>
+
+              {/* Telegram linking */}
+              <div>
+                <label className="form-label" style={{ fontSize: '0.75rem' }}>Telegram Chat ID</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <input type="text" className="form-input" style={{ flex: 1 }} placeholder="e.g. -5128959794" value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
+                  <button onClick={handleSaveTelegramId} className="btn btn-secondary btn-sm">Save</button>
+                  <button onClick={handleSendTestTelegram} className="btn btn-secondary btn-sm" disabled={!telegramChatId}><Send size={12} /></button>
+                </div>
+                {telegramStatus && <p style={{ fontSize: '0.7rem', color: telegramStatus.includes('failed') ? 'var(--color-danger)' : 'var(--color-success)', marginTop: '4px' }}>{telegramStatus}</p>}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button onClick={() => handleTriggerSweep('whatsapp')} className="btn btn-secondary btn-sm" style={{ borderColor: 'var(--color-success)', color: 'var(--color-success)', marginTop: '12px', width: '100%' }}>
+                  <SendHorizontal size={12} style={{ marginRight: '4px' }} /> Manual Alerts Scan & Sweep
+                </button>
+              </div>
+            </div>
+
+            {/* Autopay Simulation */}
+            {loans.length > 0 && (
+              <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                <h4 style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>Autopay Simulation</h4>
+                <form onSubmit={handleSimulateAutopay} style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontSize: '0.72rem' }}>Select Loan</label>
+                    <select value={autopayLoanId} onChange={e => setAutopayLoanId(e.target.value)} required style={{ width: '100%' }}>
+                      <option value="">-- Choose Loan --</option>
+                      {loans.map(l => <option key={l._id} value={l._id}>{l.provider} ({l.loanType})</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="form-group">
+                      <label className="form-label" style={{ fontSize: '0.72rem' }}>Status</label>
+                      <select value={autopayStatus} onChange={e => setAutopayStatus(e.target.value)} style={{ width: '100%' }}>
+                        <option value="success">Success</option>
+                        <option value="failure">Failure</option>
+                      </select>
+                    </div>
+                    {autopayStatus === 'failure' && (
+                      <div className="form-group">
+                        <label className="form-label" style={{ fontSize: '0.72rem' }}>Reason</label>
+                        <input type="text" className="form-input" placeholder="e.g. Insufficient funds" value={autopayReason} onChange={e => setAutopayReason(e.target.value)} required />
+                      </div>
+                    )}
+                  </div>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={autopaySimulating || !autopayLoanId}>
+                    {autopaySimulating ? 'Simulating...' : 'Trigger Auto-Debit Simulation'}
+                  </button>
+                  {autopayMessage && <p style={{ fontSize: '0.72rem', color: 'var(--color-brand)', textAlign: 'center' }}>{autopayMessage}</p>}
+                </form>
+              </div>
+            )}
+          </div>
+
+          {/* Logs / History Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <h4 style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>Live Delivery Logs</h4>
+              <div style={{ overflowY: 'auto', maxHeight: '520px', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px', flex: 1, marginTop: '12px' }}>
+                {notificationLogs.length > 0 ? (
+                  notificationLogs.map((log) => (
+                    <div key={log._id} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', background: 'rgba(255,255,255,0.01)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', fontWeight: 800, background: 'rgba(99,102,241,0.08)', color: 'var(--color-brand)', padding: '2px 6px', borderRadius: '4px' }}>
+                          {(log.template || 'OUTBOX').replace(/_/g, ' ')}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '20px', fontWeight: 600, background: log.status === 'delivered' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'delivered' ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                          {log.status}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: '1.4', margin: '6px 0' }}>
+                        {log.message}
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.02)', paddingTop: '6px' }}>
+                        <span>To: {log.phone}</span>
+                        <span>{new Date(log.sentAt).toLocaleString()}</span>
+                      </div>
+                      {log.failedReason && (
+                        <p style={{ fontSize: '0.68rem', color: 'var(--color-danger)', background: 'rgba(239,68,68,0.04)', padding: '4px 8px', borderRadius: '4px', marginTop: '6px' }}>
+                          Reason: {log.failedReason}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1 }}>
+                    <HelpCircle size={28} style={{ marginBottom: '8px', display: 'inline-block', margin: '0 auto 8px' }} />
+                    <p style={{ fontSize: '0.82rem' }}>No automated alerts dispatched yet.</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-        {telegramStatus && <p style={{ marginTop:'12px', fontSize:'0.85rem', color: telegramStatus.includes('failed')||telegramStatus.includes('Error') ? 'var(--color-danger)' : 'var(--color-success)', fontWeight:600 }}>Status: {telegramStatus}</p>}
       </div>
 
       {/* ═══════════════════════════════════════

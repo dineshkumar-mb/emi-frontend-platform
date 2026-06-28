@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
-export default function Login({ onToggleAuth }) {
+export default function Login({ onToggleAuth, onForgotPassword }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,6 +87,15 @@ export default function Login({ onToggleAuth }) {
                 onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <div style={{ textAlign: 'right', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={onForgotPassword}
+                style={{ background: 'none', border: 'none', color: 'var(--color-brand)', fontSize: '0.85rem', cursor: 'pointer', padding: 0 }}
+              >
+                Forgot Password?
               </button>
             </div>
           </div>

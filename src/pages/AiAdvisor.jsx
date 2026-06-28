@@ -11,7 +11,11 @@ import {
   LineChart, 
   Info,
   Check,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Trash2,
+  Upload,
+  FileText
 } from 'lucide-react';
 
 const QUICK_QUESTIONS = [
@@ -32,6 +36,82 @@ export default function AiAdvisor() {
   const [loading, setLoading] = useState(false);
   const [simulations, setSimulations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
+  
+  // RAG States
+  const [useRag, setUseRag] = useState(false);
+  const [documents, setDocuments] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
+  React.useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  // Background polling for documents in 'processing' state
+  React.useEffect(() => {
+    const hasProcessing = documents.some(doc => doc.status === 'processing');
+    if (hasProcessing) {
+      const timer = setTimeout(() => {
+        fetchDocuments();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [documents]);
+
+  const fetchDocuments = async () => {
+    try {
+      const res = await fetch('/api/intelligence/documents');
+      if (res.ok) {
+        const data = await res.json();
+        setDocuments(data);
+      }
+    } catch (err) {
+      console.error('Error fetching documents:', err);
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/intelligence/documents', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        await fetchDocuments();
+      } else {
+        const errData = await res.json();
+        setUploadError(errData.message || 'Failed to upload document.');
+      }
+    } catch (err) {
+      setUploadError('Error uploading document: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    try {
+      const res = await fetch(`/api/intelligence/documents/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setDocuments((prev) => prev.filter((doc) => doc._id !== id));
+      }
+    } catch (err) {
+      console.error('Error deleting document:', err);
+    }
+  };
 
   const handleSend = async (textToSend) => {
     const messageText = textToSend || query;
@@ -46,19 +126,20 @@ export default function AiAdvisor() {
       const r = await fetch('/api/intelligence/advisor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: messageText }),
+        body: JSON.stringify({ query: messageText, useRag }),
       });
       
       if (r.ok) {
         const data = await r.json();
         
-        // Append AI message along with any associated copilot actions
+        // Append AI message along with any associated copilot actions and RAG sources
         setChatHistory((prev) => [
           ...prev, 
           { 
             sender: 'ai', 
             text: data.response, 
-            actions: data.actions || [] 
+            actions: data.actions || [],
+            sources: data.sources || []
           }
         ]);
         
@@ -250,6 +331,35 @@ export default function AiAdvisor() {
                   </div>
                   {/* Render Copilot Action Cards inline if present in AI response */}
                   {chat.actions && chat.actions.map((action, actionIdx) => renderActionCard(action, actionIdx))}
+                  
+                  {/* Render RAG Source Citations */}
+                  {chat.sender === 'ai' && chat.sources && chat.sources.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', paddingLeft: '4px' }}>
+                      {chat.sources.map((src, sIdx) => (
+                        <div
+                          key={sIdx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '6px',
+                            padding: '3px 8px',
+                            fontSize: '0.72rem',
+                            color: 'var(--text-secondary)'
+                          }}
+                          title={`Similarity Score: ${(src.score * 100).toFixed(1)}%`}
+                        >
+                          <FileText size={10} color="var(--text-muted)" />
+                          <span style={{ fontWeight: 500 }}>{src.documentName}</span>
+                          <span style={{ color: 'var(--color-success)', fontSize: '0.68rem', fontWeight: 700 }}>
+                            {src.score > 0 ? `${Math.round(src.score * 100)}%` : 'match'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -304,6 +414,20 @@ export default function AiAdvisor() {
               </div>
             </div>
           )}
+
+          {/* RAG Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '0.85rem' }}>
+            <input
+              type="checkbox"
+              id="useRagCheckbox"
+              checked={useRag}
+              onChange={(e) => setUseRag(e.target.checked)}
+              style={{ accentColor: 'var(--color-brand)', cursor: 'pointer', width: '14px', height: '14px' }}
+            />
+            <label htmlFor="useRagCheckbox" style={{ cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', userSelect: 'none' }}>
+              <BookOpen size={14} /> Ground advisor responses in my knowledge documents (RAG)
+            </label>
+          </div>
 
           {/* Inputs */}
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -385,6 +509,54 @@ export default function AiAdvisor() {
                 <p style={{ fontSize: '0.88rem' }}>Enter a scenario above (e.g., "What if I pay ₹50,000 extra on my Axis loan?") to simulate payoffs.</p>
               </div>
             )}
+          </div>
+
+          {/* Document Knowledge Base (RAG) */}
+          <div className="glass-panel" style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={18} color="var(--color-brand)" /> Knowledge Base (RAG)
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '14px', lineHeight: '1.4' }}>
+              Upload financial reference documents (PDF, TXT, MD, CSV) to ground the AI Advisor's queries.
+            </p>
+
+            {/* Upload Input */}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px dashed rgba(99, 102, 241, 0.3)', borderRadius: '8px', cursor: uploading ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: 'var(--color-brand)', transition: 'background 0.2s' }}>
+                <Upload size={16} />
+                {uploading ? 'Processing document...' : 'Upload Reference Document'}
+                <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.csv" style={{ display: 'none' }} disabled={uploading} />
+              </label>
+              {uploadError && <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', marginTop: '6px' }}>{uploadError}</p>}
+            </div>
+
+            {/* Document List */}
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: '180px' }}>
+              {documents.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {documents.map((doc) => (
+                    <div key={doc._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                        <FileText size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{doc.name}</span>
+                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                            {(doc.fileSize / 1024).toFixed(1)} KB • {doc.status === 'indexed' ? `${doc.chunkCount} chunks` : doc.status}
+                          </span>
+                        </div>
+                      </div>
+                      <button onClick={() => handleDeleteDocument(doc._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s', padding: '4px' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  No documents uploaded yet.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
