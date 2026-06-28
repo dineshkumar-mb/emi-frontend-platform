@@ -12,7 +12,7 @@ import CreditHealth from './pages/CreditHealth';
 import NetWorthGoals from './pages/NetWorthGoals';
 import SubscriptionsExpenses from './pages/SubscriptionsExpenses';
 import FraudAlerts from './pages/FraudAlerts';
-import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check } from 'lucide-react';
+import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check, Sun, Moon } from 'lucide-react';
 import { GEO_CONFIGS } from './utils/geoConfig';
 
 
@@ -20,6 +20,12 @@ import { GEO_CONFIGS } from './utils/geoConfig';
 function AppContent() {
   const { user, loading, logout, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   const [authView, setAuthView] = useState('login');
   const [resetToken, setResetToken] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -160,6 +166,28 @@ function AppContent() {
                 </button>
               </div>
             </div>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className="theme-toggle-btn"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '8px',
+                color: 'var(--text-secondary)',
+                borderRadius: '8px',
+                transition: 'all var(--transition-fast)',
+                marginLeft: '8px'
+              }}
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
             
             <div style={{ width: '1px', height: '22px', background: 'var(--border-color)', margin: '0 8px' }}></div>
             
@@ -352,6 +380,28 @@ function AppContent() {
                 <option value="EU">🇪🇺 EU (€)</option>
                 <option value="AE">🇦🇪 AE (د.إ)</option>
               </select>
+            </div>
+
+            {/* Mobile Theme Toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '6px 12px', marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', color: 'var(--text-secondary)' }}>
+                {theme === 'dark' ? <Sun size={14} style={{ marginRight: '6px' }} /> : <Moon size={14} style={{ marginRight: '6px' }} />} Theme:
+              </span>
+              <button
+                onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                style={{
+                  background: 'none',
+                  color: 'var(--text-primary)',
+                  border: 'none',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  outline: 'none',
+                  textTransform: 'capitalize'
+                }}
+              >
+                {theme} Mode
+              </button>
             </div>
 
             <button
