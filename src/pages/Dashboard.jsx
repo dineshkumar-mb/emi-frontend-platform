@@ -5,7 +5,7 @@ import {
   TrendingUp, Calendar, ShieldAlert, Plus, Trash2, Sparkles, Info, X,
   Calculator, HelpCircle, FileText, Send, SendHorizontal, Download,
   Clipboard, CheckCircle2, AlertCircle, Smartphone, Zap, Shield,
-  RefreshCw, CreditCard, Repeat, Activity
+  RefreshCw, CreditCard, Repeat, Activity, Eye, EyeOff
 } from 'lucide-react';
 import { parseSmsText, matchLoan } from '../utils/smsParser';
 import { validatePaymentLocally } from '../utils/paymentValidator';
@@ -74,6 +74,8 @@ export default function Dashboard({ onSendToCalculator }) {
   // WhatsApp
   const [whatsappNumber, setWhatsappNumber] = useState(user?.whatsappNumber || '');
   const [whatsappStatus, setWhatsappStatus] = useState('');
+  const [showWhatsapp, setShowWhatsapp]     = useState(false);
+  const [showTelegram, setShowTelegram]     = useState(false);
 
   // SMS Detection — dual-engine state
   const [isSmsModalOpen, setIsSmsModalOpen]   = useState(false);
@@ -227,6 +229,36 @@ export default function Dashboard({ onSendToCalculator }) {
       if (rAnalytics.ok) setNotificationAnalytics(await rAnalytics.json());
     } catch (err) {
       console.error('Error fetching notification center data:', err);
+    }
+  };
+
+  const handleResetRecentNotifications = async () => {
+    if (!window.confirm('Are you sure you want to clear all Recent Notifications?')) return;
+    try {
+      const r = await fetch('/api/intelligence/notifications', { method: 'DELETE' });
+      if (r.ok) {
+        setNotifications([]);
+      } else {
+        const d = await r.json();
+        setError(d.message || 'Failed to reset notifications.');
+      }
+    } catch {
+      setError('Network error clearing notifications.');
+    }
+  };
+
+  const handleResetDeliveryLogs = async () => {
+    if (!window.confirm('Are you sure you want to clear all Live Delivery Logs?')) return;
+    try {
+      const r = await fetch('/api/notifications/logs', { method: 'DELETE' });
+      if (r.ok) {
+        fetchNotificationData();
+      } else {
+        const d = await r.json();
+        setError(d.message || 'Failed to reset delivery logs.');
+      }
+    } catch {
+      setError('Network error clearing delivery logs.');
     }
   };
 
@@ -1034,9 +1066,20 @@ export default function Dashboard({ onSendToCalculator }) {
 
             {/* Recent Notifications Log Widget */}
             <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={18} color="var(--color-brand)" /> Recent Notifications
-              </h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                  <Activity size={18} color="var(--color-brand)" /> Recent Notifications
+                </h3>
+                {notifications.length > 0 && (
+                  <button 
+                    onClick={handleResetRecentNotifications} 
+                    className="btn btn-secondary btn-sm" 
+                    style={{ minHeight: '30px', padding: '4px 10px', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--color-danger)' }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '280px' }}>
                 {notifications.length > 0 ? (
                   notifications.slice(0, 5).map((log, index) => (
@@ -1158,7 +1201,34 @@ export default function Dashboard({ onSendToCalculator }) {
               <div style={{ marginTop: '12px', marginBottom: '16px' }}>
                 <label className="form-label" style={{ fontSize: '0.75rem' }}>WhatsApp Number</label>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <input type="text" className="form-input" style={{ flex: 1 }} placeholder="e.g. +919876543210" value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} />
+                  <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type={showWhatsapp ? "text" : "password"} 
+                      className="form-input" 
+                      style={{ flex: 1, paddingRight: '40px' }} 
+                      placeholder="e.g. +919876543210" 
+                      value={whatsappNumber} 
+                      onChange={e => setWhatsappNumber(e.target.value)} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowWhatsapp(!showWhatsapp)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {showWhatsapp ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   <button onClick={handleSaveWhatsappNumber} className="btn btn-secondary btn-sm">Save</button>
                   <button onClick={handleSendTestWhatsapp} className="btn btn-secondary btn-sm" disabled={!whatsappNumber}><Send size={12} /></button>
                 </div>
@@ -1169,7 +1239,34 @@ export default function Dashboard({ onSendToCalculator }) {
               <div>
                 <label className="form-label" style={{ fontSize: '0.75rem' }}>Telegram Chat ID</label>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                  <input type="text" className="form-input" style={{ flex: 1 }} placeholder="e.g. -5128959794" value={telegramChatId} onChange={e => setTelegramChatId(e.target.value)} />
+                  <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                    <input 
+                      type={showTelegram ? "text" : "password"} 
+                      className="form-input" 
+                      style={{ flex: 1, paddingRight: '40px' }} 
+                      placeholder="e.g. -5128959794" 
+                      value={telegramChatId} 
+                      onChange={e => setTelegramChatId(e.target.value)} 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTelegram(!showTelegram)}
+                      style={{
+                        position: 'absolute',
+                        right: '12px',
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      {showTelegram ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                   <button onClick={handleSaveTelegramId} className="btn btn-secondary btn-sm">Save</button>
                   <button onClick={handleSendTestTelegram} className="btn btn-secondary btn-sm" disabled={!telegramChatId}><Send size={12} /></button>
                 </div>
@@ -1222,7 +1319,18 @@ export default function Dashboard({ onSendToCalculator }) {
           {/* Logs / History Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <h4 style={{ fontWeight: 700, fontSize: '0.92rem', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)' }}>Live Delivery Logs</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h4 style={{ fontWeight: 700, fontSize: '0.92rem', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-primary)', margin: 0 }}>Live Delivery Logs</h4>
+                {notificationLogs.length > 0 && (
+                  <button 
+                    onClick={handleResetDeliveryLogs} 
+                    className="btn btn-secondary btn-sm" 
+                    style={{ minHeight: '30px', padding: '4px 10px', fontSize: '0.75rem', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--color-danger)' }}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
               <div style={{ overflowY: 'auto', maxHeight: '520px', display: 'flex', flexDirection: 'column', gap: '10px', paddingRight: '4px', flex: 1, marginTop: '12px' }}>
                 {notificationLogs.length > 0 ? (
                   notificationLogs.map((log) => (
