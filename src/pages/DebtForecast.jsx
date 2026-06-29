@@ -94,7 +94,7 @@ export default function DebtForecast() {
   return (
     <div className="animate-fade-in page-container">
       {/* Header */}
-      <div style={{ marginBottom: '28px' }}>
+      <div style={{ marginBottom: '28px' }} className="animate-slide-down">
         <h1 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: '6px' }}>Debt-Free Forecast</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
           Evaluate snowball and avalanche plans to accelerate paydown and save on interest.
@@ -106,7 +106,7 @@ export default function DebtForecast() {
         {/* Normal */}
         <div
           onClick={() => setSelectedStrategy('normal')}
-          className="glass-panel"
+          className="glass-panel animate-scale-up delay-100"
           style={{
             padding: '24px',
             cursor: 'pointer',
@@ -130,7 +130,7 @@ export default function DebtForecast() {
         {/* Snowball */}
         <div
           onClick={() => setSelectedStrategy('snowball')}
-          className="glass-panel"
+          className="glass-panel animate-scale-up delay-200"
           style={{
             padding: '24px',
             cursor: 'pointer',
@@ -155,7 +155,7 @@ export default function DebtForecast() {
         {/* Avalanche */}
         <div
           onClick={() => setSelectedStrategy('avalanche')}
-          className="glass-panel"
+          className="glass-panel animate-scale-up delay-300"
           style={{
             padding: '24px',
             cursor: 'pointer',
@@ -181,7 +181,7 @@ export default function DebtForecast() {
       {/* Payoff Graph Projections */}
       <div className="grid-2-col" style={{ gap: '24px' }}>
         {/* Graph */}
-        <div className="glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div className="glass-panel animate-slide-right delay-400" style={{ padding: '24px', flex: 1 }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '20px' }}>Remaining Debt Projections</h3>
           <div style={{ width: '100%', height: '300px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -199,7 +199,7 @@ export default function DebtForecast() {
         </div>
 
         {/* Selected Strategy Details & Strategy Description */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="glass-panel animate-fade-in delay-400" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Sparkles size={16} color="var(--color-brand)" /> Accelerated Roadmap ({currentStats.label})
