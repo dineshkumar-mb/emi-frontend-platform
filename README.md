@@ -38,8 +38,8 @@ This repository is fully integrated with **GitHub Actions**.
 ### Installation (Local Dev)
 
 ```bash
-git clone https://github.com/dineshkumar-mb/emi-frontend-platform
-cd emi-frontend-platform
+git clone https://github.com/dineshkumar-mb/emi-frontend-platform frontend-platform
+cd frontend-platform
 npm install
 npm run dev
 ```
