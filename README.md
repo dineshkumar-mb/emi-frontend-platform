@@ -13,7 +13,7 @@ The frontend integrates a conversational UI with structured financial data visua
 ## 🛠️ Architecture
 
 - **Frontend Stack:** React.js, Vite.
-- **Hosting:** Vercel (Live Demo: https://emi-frontend-platform.vercel.app/).
+- **Hosting:** Dockerized / Vercel
 - **API Integration:** REST API calls to the Node.js backend to fetch EMI schedules, submit documents for RAG indexing, and query the AI advisor.
 
 ## The Prompt / Data Structure
@@ -22,25 +22,39 @@ While the AI prompt engineering lives on the backend, the frontend is designed t
 
 ## Response Validation & Error Handling
 
-The UI implements resilient error handling for AI responses. If the backend returns a `no_match` fallback status or the AI service is unavailable, the frontend safely catches these errors and displays graceful fallback disclaimers to the user (e.g., indicating that the query is being answered from general knowledge rather than uploaded documents).
+The UI implements resilient error handling for AI responses. If the backend returns a `no_match` fallback status or the AI service is unavailable, the frontend safely catches these errors and displays graceful fallback disclaimers to the user.
+
+## CI/CD and Docker
+
+This repository is fully integrated with **GitHub Actions**.
+- **CI Pipeline**: Automatically lints and builds the React code on Pull Requests and pushes to `main`.
+- **CD Pipeline**: Automatically builds the Docker image and publishes it to the GitHub Container Registry (`ghcr.io`) upon merging to `main`.
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js v22
+- Node.js v22 OR Docker Desktop
 
-### Installation
+### Installation (Local Dev)
 
 ```bash
 git clone https://github.com/dineshkumar-mb/emi-frontend-platform
 cd emi-frontend-platform
 npm install
+npm run dev
 ```
 
-### Running the App
+### Running with Docker
+
+Since the frontend is fully Dockerized (served by Nginx), you can run it from the root directory of the mono-repo using Docker Compose:
 
 ```bash
-npm run dev
+docker compose up -d frontend
+```
+Or build it manually:
+```bash
+docker build -t emi-frontend .
+docker run -p 80:80 emi-frontend
 ```
 
 ## Environment Variables

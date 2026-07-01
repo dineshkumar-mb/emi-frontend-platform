@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  Sparkles, 
-  Send, 
-  HelpCircle, 
-  ArrowRight, 
-  TrendingDown, 
-  CheckCircle, 
-  Filter, 
-  Bell, 
-  LineChart, 
+import {
+  Sparkles,
+  Send,
+  HelpCircle,
+  ArrowRight,
+  TrendingDown,
+  CheckCircle,
+  Filter,
+  Bell,
+  LineChart,
   Info,
   Check,
   AlertCircle,
@@ -36,7 +36,7 @@ export default function AiAdvisor() {
   const [loading, setLoading] = useState(false);
   const [simulations, setSimulations] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
-  
+
   // RAG States
   const [useRag, setUseRag] = useState(false);
   const [documents, setDocuments] = useState([]);
@@ -113,6 +113,20 @@ export default function AiAdvisor() {
     }
   };
 
+  const handleResetDocuments = async () => {
+    if (!window.confirm('Are you sure you want to delete all uploaded documents? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/intelligence/documents', {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setDocuments([]);
+      }
+    } catch (err) {
+      console.error('Error resetting documents:', err);
+    }
+  };
+
   const handleSend = async (textToSend) => {
     const messageText = textToSend || query;
     if (!messageText.trim()) return;
@@ -128,21 +142,21 @@ export default function AiAdvisor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: messageText, useRag }),
       });
-      
+
       if (r.ok) {
         const data = await r.json();
-        
+
         // Append AI message along with any associated copilot actions and RAG sources
         setChatHistory((prev) => [
-          ...prev, 
-          { 
-            sender: 'ai', 
-            text: data.response, 
+          ...prev,
+          {
+            sender: 'ai',
+            text: data.response,
             actions: data.actions || [],
             sources: data.sources || []
           }
         ]);
-        
+
         if (data.simulations && data.simulations.length > 0) {
           setSimulations(data.simulations);
         }
@@ -150,7 +164,8 @@ export default function AiAdvisor() {
           setRecommendations(data.recommendations);
         }
       } else {
-        setChatHistory((prev) => [...prev, { sender: 'ai', text: 'Sorry, I failed to connect to the advisor engine.' }]);
+        const errorData = await r.json().catch(() => ({}));
+        setChatHistory((prev) => [...prev, { sender: 'ai', text: errorData.message || 'Sorry, I failed to connect to the advisor engine.' }]);
       }
     } catch (err) {
       setChatHistory((prev) => [...prev, { sender: 'ai', text: 'Error executing advisors request: ' + err.message }]);
@@ -222,7 +237,7 @@ export default function AiAdvisor() {
               <LineChart size={16} color="var(--color-brand)" />
               <span style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Copilot Amortization Engine</span>
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
               <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase' }}>Months to Debt-Free</span>
@@ -241,16 +256,16 @@ export default function AiAdvisor() {
                   <svg width="100%" height="100" viewBox="0 0 260 100" style={{ overflow: 'visible' }}>
                     <defs>
                       <linearGradient id="glowGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-brand)" stopOpacity="0.3"/>
-                        <stop offset="100%" stopColor="var(--color-brand)" stopOpacity="0"/>
+                        <stop offset="0%" stopColor="var(--color-brand)" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="var(--color-brand)" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                     {/* Grid line */}
                     <line x1="0" y1="90" x2="260" y2="90" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-                    
+
                     {/* Area under curve */}
                     <polygon points={svgAreaPoints} fill="url(#glowGrad)" />
-                    
+
                     {/* Curve line */}
                     <polyline
                       fill="none"
@@ -331,7 +346,7 @@ export default function AiAdvisor() {
                   </div>
                   {/* Render Copilot Action Cards inline if present in AI response */}
                   {chat.actions && chat.actions.map((action, actionIdx) => renderActionCard(action, actionIdx))}
-                  
+
                   {/* Render RAG Source Citations */}
                   {chat.sender === 'ai' && chat.sources && chat.sources.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px', paddingLeft: '4px' }}>
@@ -506,58 +521,12 @@ export default function AiAdvisor() {
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
                 <HelpCircle size={32} style={{ color: 'var(--text-muted)', marginBottom: '10px', display: 'inline-block' }} />
-                <p style={{ fontSize: '0.88rem' }}>Enter a scenario above (e.g., "What if I pay ₹50,000 extra on my Axis loan?") to simulate payoffs.</p>
+                <p style={{ fontSize: '0.88rem' }}>Enter a scenario above (e.g., "What if I pay ₹50,000 extra on my house loan?") to simulate payoffs.</p>
               </div>
             )}
           </div>
 
-          {/* Document Knowledge Base (RAG) */}
-          <div className="glass-panel" style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BookOpen size={18} color="var(--color-brand)" /> Knowledge Base (RAG)
-            </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '14px', lineHeight: '1.4' }}>
-              Upload financial reference documents (PDF, TXT, MD, CSV) to ground the AI Advisor's queries.
-            </p>
 
-            {/* Upload Input */}
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', background: 'rgba(99, 102, 241, 0.05)', border: '1px dashed rgba(99, 102, 241, 0.3)', borderRadius: '8px', cursor: uploading ? 'not-allowed' : 'pointer', fontSize: '0.85rem', color: 'var(--color-brand)', transition: 'background 0.2s' }}>
-                <Upload size={16} />
-                {uploading ? 'Processing document...' : 'Upload Reference Document'}
-                <input type="file" onChange={handleFileUpload} accept=".txt,.md,.pdf,.csv" style={{ display: 'none' }} disabled={uploading} />
-              </label>
-              {uploadError && <p style={{ color: 'var(--color-danger)', fontSize: '0.75rem', marginTop: '6px' }}>{uploadError}</p>}
-            </div>
-
-            {/* Document List */}
-            <div style={{ flex: 1, overflowY: 'auto', maxHeight: '180px' }}>
-              {documents.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {documents.map((doc) => (
-                    <div key={doc._id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                        <FileText size={16} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-                        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 600, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{doc.name}</span>
-                          <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-                            {(doc.fileSize / 1024).toFixed(1)} KB • {doc.status === 'indexed' ? `${doc.chunkCount} chunks` : doc.status}
-                          </span>
-                        </div>
-                      </div>
-                      <button onClick={() => handleDeleteDocument(doc._id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s', padding: '4px' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-danger)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}>
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '20px 10px', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                  No documents uploaded yet.
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
