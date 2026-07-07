@@ -549,6 +549,7 @@ option {
   font-weight: 800;
   font-size: 1.25rem;
   background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-decoration: none;
