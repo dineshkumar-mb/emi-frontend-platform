@@ -13,4 +13,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'vendor';
+            if (id.includes('recharts')) return 'charts';
+            if (id.includes('xlsx') || id.includes('lucide-react')) return 'utils';
+            return 'vendor'; // all other node_modules
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 })

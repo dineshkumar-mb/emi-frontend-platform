@@ -110,6 +110,8 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Background ambient blur blobs for a premium look */
@@ -1141,6 +1143,10 @@ option {
 @media (max-width: 480px) {
   :root {
     --page-padding: 12px;
+  }
+  
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
   }
 
   .metrics-grid {
