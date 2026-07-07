@@ -377,6 +377,44 @@ option {
   to   { transform: rotate(360deg); }
 }
 
+@keyframes rotateMesh {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.auth-bg {
+  position: relative;
+  overflow: hidden;
+  /* subtle deep dark background override for auth pages */
+  background: linear-gradient(to bottom right, var(--bg-primary), var(--bg-secondary));
+}
+
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 30% 40%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+  animation: rotateMesh 25s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ensure glass panels in auth-bg pop properly */
+.auth-bg > .glass-panel {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15), 0 0 0 1px var(--border-color) inset;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
 .animate-fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
@@ -401,6 +439,23 @@ option {
 
 .animate-scale-up {
   animation: scaleUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pulseOpacity {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulseOpacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
 }
 
 /* Stagger delays */

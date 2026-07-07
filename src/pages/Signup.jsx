@@ -28,7 +28,7 @@ export default function Signup({ onToggleAuth }) {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
+    <div className="auth-bg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '480px', padding: '40px 30px' }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '12px', background: 'var(--gradient-brand)', marginBottom: '16px', boxShadow: '0 8px 24px var(--color-brand-glow)' }}>

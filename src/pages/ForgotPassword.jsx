@@ -33,7 +33,7 @@ export default function ForgotPassword({ onBackToLogin }) {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
+    <div className="auth-bg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px' }}>
         
         <button 

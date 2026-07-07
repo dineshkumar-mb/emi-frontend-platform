@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { LogIn, AlertCircle, Eye, EyeOff, Server, Info } from 'lucide-react';
 
 export default function Login({ onToggleAuth, onForgotPassword }) {
   const { login } = useAuth();
@@ -25,8 +25,8 @@ export default function Login({ onToggleAuth, onForgotPassword }) {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
-      <div className="glass-panel" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px' }}>
+    <div className="auth-bg" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 100px)', padding: '20px' }}>
+      <div className="glass-panel animate-scale-up" style={{ width: '100%', maxWidth: '420px', padding: '40px 30px' }}>
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '12px', background: 'var(--gradient-brand)', marginBottom: '16px', boxShadow: '0 8px 24px var(--color-brand-glow)' }}>
             <LogIn size={28} color="#fff" />
@@ -114,6 +114,28 @@ export default function Login({ onToggleAuth, onForgotPassword }) {
           >
             Create Account
           </button>
+        </div>
+
+        <div className="animate-fade-in delay-300" style={{ marginTop: '24px', background: 'rgba(99, 102, 241, 0.04)', padding: '2px', borderRadius: '14px', position: 'relative', overflow: 'hidden' }}>
+          {/* Animated background gradient border */}
+          <div className="animate-spin-slow" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'conic-gradient(transparent, transparent, transparent, var(--color-brand))', zIndex: 0 }} />
+          
+          <div style={{ position: 'relative', background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.5', zIndex: 1 }}>
+            
+            <div className="animate-pulse-glow" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', flexShrink: 0 }}>
+              <Server size={20} style={{ color: 'var(--color-brand)' }} />
+            </div>
+
+            <div>
+              <strong style={{ color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                Server Status: Hibernating <span className="animate-pulse" style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-warning)' }} />
+              </strong>
+              <div style={{ marginTop: '4px' }}>
+                Because this is a free-tier deployment, the backend sleeps when inactive. The first login might take <strong style={{ color: 'var(--color-brand)' }}>10-15 seconds</strong> to wake up the server.
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
     </div>
