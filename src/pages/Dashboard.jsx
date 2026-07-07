@@ -60,6 +60,8 @@ export default function Dashboard({ onSendToCalculator }) {
   const [interestRate, setInterestRate]   = useState('');
   const [tenure, setTenure]               = useState('');
   const [nextDueDate, setNextDueDate]     = useState('');
+  const [autoPayEnabled, setAutoPayEnabled] = useState(false);
+  const [autoPayDay, setAutoPayDay]         = useState('');
   const [formLoading, setFormLoading]     = useState(false);
 
   // Upload Statement
@@ -68,7 +70,7 @@ export default function Dashboard({ onSendToCalculator }) {
   const [uploadLoading, setUploadLoading]         = useState(false);
 
   // Telegram
-  const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || '-5128959794');
+  const [telegramChatId, setTelegramChatId] = useState(user?.telegramChatId || '');
   const [telegramStatus, setTelegramStatus] = useState('');
 
   // WhatsApp
@@ -124,7 +126,7 @@ export default function Dashboard({ onSendToCalculator }) {
 
   useEffect(() => {
     if (user) {
-      setTelegramChatId(user.telegramChatId || '-5128959794');
+      setTelegramChatId(user.telegramChatId || '');
       setWhatsappNumber(user.whatsappNumber || '');
     }
   }, [user]);
@@ -475,12 +477,13 @@ export default function Dashboard({ onSendToCalculator }) {
       const r = await fetch('/api/loans', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider, loanType, principal: Number(principal), interestRate: Number(interestRate), tenure: Number(tenure), nextDueDate }),
+        body: JSON.stringify({ provider, loanType, principal: Number(principal), interestRate: Number(interestRate), tenure: Number(tenure), nextDueDate, autoPayEnabled, autoPayDay: autoPayDay ? Number(autoPayDay) : null }),
       });
       if (r.ok) {
         setIsModalOpen(false);
         setProvider(''); setLoanType('Personal Loan'); setPrincipal('');
         setInterestRate(''); setTenure(''); setNextDueDate('');
+        setAutoPayEnabled(false); setAutoPayDay('');
         fetchLoans();
       } else { const d = await r.json(); setError(d.message || 'Failed to add loan.'); }
     } catch { setError('Network error adding loan.'); }
@@ -1394,6 +1397,16 @@ export default function Dashboard({ onSendToCalculator }) {
                 <div className="form-group"><label className="form-label">Tenure (Months)</label><input type="number" className="form-input" placeholder="e.g. 180" value={tenure} onChange={e => setTenure(e.target.value)} required min={1}/></div>
                 <div className="form-group"><label className="form-label">Next Due Date</label><input type="date" className="form-input" value={nextDueDate} onChange={e => setNextDueDate(e.target.value)} required/></div>
               </div>
+              <div style={{ display:'flex', gap:'10px', alignItems: 'center', marginTop: '10px' }}>
+                <input type="checkbox" checked={autoPayEnabled} onChange={e => setAutoPayEnabled(e.target.checked)} id="autopay-checkbox" />
+                <label htmlFor="autopay-checkbox" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Enable Auto-Debit / Standing Instruction</label>
+              </div>
+              {autoPayEnabled && (
+                <div className="form-group" style={{ marginTop: '10px' }}>
+                  <label className="form-label">Auto-Debit Day of Month (1-31)</label>
+                  <input type="number" className="form-input" placeholder="e.g. 10" value={autoPayDay} onChange={e => setAutoPayDay(e.target.value)} min={1} max={31} required={autoPayEnabled} />
+                </div>
+              )}
               <button type="submit" className="btn btn-primary" style={{ width:'100%', padding:'12px', marginTop:'14px' }} disabled={formLoading}>{formLoading ? 'Adding Record...' : 'Confirm Loan Details'}</button>
             </form>
           </div>
