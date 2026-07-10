@@ -450,7 +450,7 @@ export default function Dashboard({ onSendToCalculator }) {
       });
       if (r.ok) {
         setSmsResult({ type: 'success', message: `✓ Payment of ${formatCurrency(body.amount, user?.geo || 'IN')} confirmed for ${smsMatchedLoan.provider}!` });
-        fetchLoans();
+        fetchDashboardData();
       } else {
         const d = await r.json();
         setSmsResult({ type: 'error', message: d.message || 'Failed to record payment.' });
@@ -484,7 +484,7 @@ export default function Dashboard({ onSendToCalculator }) {
         setProvider(''); setLoanType('Personal Loan'); setPrincipal('');
         setInterestRate(''); setTenure(''); setNextDueDate('');
         setAutoPayEnabled(false); setAutoPayDay('');
-        fetchLoans();
+        fetchDashboardData();
       } else { const d = await r.json(); setError(d.message || 'Failed to add loan.'); }
     } catch { setError('Network error adding loan.'); }
     finally { setFormLoading(false); }
@@ -516,7 +516,7 @@ export default function Dashboard({ onSendToCalculator }) {
     if (!window.confirm('Delete this loan record?')) return;
     try {
       const r = await fetch(`/api/loans/${id}`, { method: 'DELETE' });
-      if (r.ok) { if (selectedLoanForPrepay?._id === id) { setSelectedLoanForPrepay(null); setPrepayResult(null); } fetchLoans(); }
+      if (r.ok) { if (selectedLoanForPrepay?._id === id) { setSelectedLoanForPrepay(null); setPrepayResult(null); } fetchDashboardData(); }
     } catch { setError('Failed to delete loan.'); }
   };
 
@@ -711,7 +711,7 @@ export default function Dashboard({ onSendToCalculator }) {
         </div>
         <div className="dashboard-header-actions">
           {loans.length > 0 && (
-            <button onClick={() => exportToExcel(loans)} className="btn btn-secondary" style={{ borderColor:'rgba(16,185,129,0.3)', color:'var(--color-success)' }}>
+            <button onClick={() => exportToExcel(loans, null, payments.length > 0 ? payments : (historyStats?.payments || []))} className="btn btn-secondary" style={{ borderColor:'rgba(16,185,129,0.3)', color:'var(--color-success)' }}>
               <Download size={16} /> Export Excel
             </button>
           )}
