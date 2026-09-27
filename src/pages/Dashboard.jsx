@@ -5,7 +5,8 @@ import {
   TrendingUp, Calendar, ShieldAlert, Plus, Trash2, Sparkles, Info, X,
   Calculator, HelpCircle, FileText, Send, SendHorizontal, Download,
   Clipboard, CheckCircle2, AlertCircle, Smartphone, Zap, Shield,
-  RefreshCw, CreditCard, Repeat, Activity, Eye, EyeOff
+  RefreshCw, CreditCard, Repeat, Activity, Eye, EyeOff,
+  Landmark, ChevronRight
 } from 'lucide-react';
 import { parseSmsText, matchLoan } from '../utils/smsParser';
 import { validatePaymentLocally } from '../utils/paymentValidator';
@@ -39,7 +40,7 @@ const FLAG_META = {
   ambiguous_source:          { icon: '❓', label: 'Ambiguous source — could not verify',   danger: false },
 };
 
-export default function Dashboard({ onSendToCalculator }) {
+export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
   const { user, refreshUser } = useAuth();
   const [loans, setLoans] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -51,6 +52,14 @@ export default function Dashboard({ onSendToCalculator }) {
   const [error, setError] = useState('');
   const [healthData, setHealthData] = useState(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  const [repoRateData, setRepoRateData] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/news/repo-rate')
+      .then(r => r.ok ? r.json() : null)
+      .then(res => { if (res && res.data) setRepoRateData(res.data); })
+      .catch(() => {});
+  }, []);
 
   // Form states
   const [isModalOpen, setIsModalOpen]     = useState(false);
@@ -732,6 +741,70 @@ export default function Dashboard({ onSendToCalculator }) {
           <ShieldAlert size={18} style={{ flexShrink:0 }} /><span>{error}</span>
         </div>
       )}
+
+      {/* Live RBI Repo Rate & Market Intelligence Banner */}
+      <div 
+        onClick={onNavigateToNews}
+        className="glass-panel" 
+        style={{
+          marginBottom: '24px',
+          padding: '14px 20px',
+          borderRadius: '12px',
+          background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.09) 0%, rgba(59, 130, 246, 0.05) 100%)',
+          border: '1px solid rgba(99, 102, 241, 0.25)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: onNavigateToNews ? 'pointer' : 'default',
+          flexWrap: 'wrap',
+          gap: '12px',
+          transition: 'transform var(--transition-fast)'
+        }}
+        title="Click to view live scraped financial news & repo rate updates"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'rgba(99, 102, 241, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#818cf8',
+            flexShrink: 0
+          }}>
+            <Landmark size={20} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                RBI Policy Repo Rate: {repoRateData?.policyRepoRate || '6.50%'}
+              </span>
+              <span style={{ 
+                fontSize: '0.7rem', 
+                background: 'rgba(16, 185, 129, 0.15)', 
+                color: 'var(--color-success)', 
+                padding: '2px 8px', 
+                borderRadius: '10px',
+                fontWeight: 700 
+              }}>
+                Active Benchmark
+              </span>
+            </div>
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              {repoRateData?.recentArticles?.[0]?.borrowerImpact || 'Under the EBLR framework, floating home & retail loan EMIs are anchored directly to this rate.'}
+            </p>
+          </div>
+        </div>
+
+        {onNavigateToNews && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--color-brand)', fontSize: '0.82rem', fontWeight: 700 }}>
+            <span>View Repo Rate Watch & News</span>
+            <ChevronRight size={15} />
+          </div>
+        )}
+      </div>
 
       {/* Metric Cards */}
       <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>

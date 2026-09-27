@@ -25,8 +25,8 @@ const QUICK_QUESTIONS = [
   'How healthy are my finances and debt burden?',
 ];
 
-export default function AiAdvisor() {
-  const [query, setQuery] = useState('');
+export default function AiAdvisor({ initialQuery = '' }) {
+  const [query, setQuery] = useState(initialQuery || '');
   const [chatHistory, setChatHistory] = useState([
     {
       sender: 'ai',
@@ -38,10 +38,17 @@ export default function AiAdvisor() {
   const [recommendations, setRecommendations] = useState([]);
 
   // RAG States
-  const [useRag, setUseRag] = useState(false);
+  const [useRag, setUseRag] = useState(Boolean(initialQuery));
   const [documents, setDocuments] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+
+  React.useEffect(() => {
+    if (initialQuery) {
+      setQuery(initialQuery);
+      setUseRag(true);
+    }
+  }, [initialQuery]);
 
   React.useEffect(() => {
     fetchDocuments();

@@ -12,7 +12,8 @@ import CreditHealth from './pages/CreditHealth';
 import NetWorthGoals from './pages/NetWorthGoals';
 import SubscriptionsExpenses from './pages/SubscriptionsExpenses';
 import FraudAlerts from './pages/FraudAlerts';
-import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check, Sun, Moon } from 'lucide-react';
+import MarketNews from './pages/MarketNews';
+import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check, Sun, Moon, Newspaper } from 'lucide-react';
 import { GEO_CONFIGS } from './utils/geoConfig';
 
 
@@ -30,6 +31,7 @@ function AppContent() {
   const [resetToken, setResetToken] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [calculatorInputs, setCalculatorInputs] = useState(null);
+  const [advisorInitialQuery, setAdvisorInitialQuery] = useState('');
 
   // Dropdown States
   const [isToolsDropdownOpen, setIsToolsDropdownOpen] = useState(false);
@@ -125,6 +127,12 @@ function AppContent() {
               className={`nav-link ${activeTab === 'health' ? 'active' : ''}`}
             >
               <ShieldAlert size={15} /> Credit Health
+            </button>
+            <button 
+              onClick={() => handleTabChange('market-news')}
+              className={`nav-link ${activeTab === 'market-news' ? 'active' : ''}`}
+            >
+              <Newspaper size={15} /> Repo Rate & News
             </button>
 
             {/* Tools Dropdown Container */}
@@ -306,6 +314,12 @@ function AppContent() {
           >
             <ShieldAlert size={18} /> Credit Health
           </button>
+          <button
+            className={`nav-mobile-item ${activeTab === 'market-news' ? 'active' : ''}`}
+            onClick={() => handleTabChange('market-news')}
+          >
+            <Newspaper size={18} /> Repo Rate & News
+          </button>
 
           <div className="nav-mobile-divider" />
           <div className="nav-mobile-section-title">Tools & Calculators</div>
@@ -416,11 +430,22 @@ function AppContent() {
 
       <main style={{ minHeight: 'calc(100vh - 70px)' }}>
         {activeTab === 'dashboard' && (
-          <Dashboard onSendToCalculator={(inputs) => { setCalculatorInputs(inputs); handleTabChange('calculator'); }} />
+          <Dashboard 
+            onSendToCalculator={(inputs) => { setCalculatorInputs(inputs); handleTabChange('calculator'); }} 
+            onNavigateToNews={() => handleTabChange('market-news')}
+          />
         )}
-        {activeTab === 'advisor' && <AiAdvisor />}
+        {activeTab === 'advisor' && <AiAdvisor initialQuery={advisorInitialQuery} />}
         {activeTab === 'forecast' && <DebtForecast />}
         {activeTab === 'health' && <CreditHealth />}
+        {activeTab === 'market-news' && (
+          <MarketNews 
+            onConsultAdvisor={(query) => {
+              setAdvisorInitialQuery(query);
+              handleTabChange('advisor');
+            }}
+          />
+        )}
         {activeTab === 'net-worth' && <NetWorthGoals />}
         {activeTab === 'subscriptions' && <SubscriptionsExpenses />}
         {activeTab === 'fraud' && <FraudAlerts />}
