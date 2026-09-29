@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Repeat, Trash2, Plus, HelpCircle, FileText, Sparkles, AlertTriangle, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { useAuth } from '../context/AuthContext';
@@ -12,7 +12,6 @@ export default function SubscriptionsExpenses() {
   // States
   const [subscriptions, setSubscriptions] = useState([]);
   const [burden, setBurden] = useState({ totalMonthlyBurden: 0, recommendations: [] });
-  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -273,15 +272,15 @@ export default function SubscriptionsExpenses() {
 
       {/* MODAL: Add Sub */}
       {isSubModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', padding: '30px', background: 'var(--bg-secondary)' }}>
+        <div className="modal-overlay">
+          <div className="modal-panel animate-fade-in" style={{ maxWidth: '420px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Record Subscription</h3>
               <button onClick={() => setIsSubModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>✕</button>
             </div>
             <form onSubmit={handleAddSub}>
               <div className="form-group"><label className="form-label">Subscription Provider</label><input type="text" className="form-input" placeholder="e.g. Netflix, Prime, ChatGPT" value={subName} onChange={e => setSubName(e.target.value)} required /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="form-row-2col" style={{ gap: '14px' }}>
                 <div className="form-group"><label className="form-label">Billing Amount</label><input type="number" className="form-input" placeholder="e.g. 199" value={subAmount} onChange={e => setSubAmount(e.target.value)} required min={1} /></div>
                 <div className="form-group"><label className="form-label">Frequency</label>
                   <select value={subFrequency} onChange={e => setSubFrequency(e.target.value)} style={{ width: '100%' }}>
@@ -298,8 +297,8 @@ export default function SubscriptionsExpenses() {
 
       {/* MODAL: Analyze Statement */}
       {isUploadModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'var(--bg-secondary)' }}>
+        <div className="modal-overlay">
+          <div className="modal-panel animate-fade-in" style={{ maxWidth: '440px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Upload Statement / Invoice</h3>
               <button onClick={() => { setIsUploadModalOpen(false); setUploadFile(null); }} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>✕</button>

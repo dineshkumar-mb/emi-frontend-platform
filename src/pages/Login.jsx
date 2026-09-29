@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle, Eye, EyeOff, Server, Info } from 'lucide-react';
+import { LogIn, AlertCircle, Eye, EyeOff, Server } from 'lucide-react';
 
 export default function Login({ onToggleAuth, onForgotPassword }) {
   const { login } = useAuth();

@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  TrendingUp, Landmark, RefreshCw, ExternalLink, Sparkles, 
-  Search, Filter, AlertCircle, Percent, ArrowUpRight, CheckCircle2,
-  Clock, BookOpen, ChevronRight, Layers, ShieldCheck
+  TrendingUp, Landmark, RefreshCw, Sparkles, 
+  Search, Percent, ArrowUpRight, CheckCircle2,
+  Clock, BookOpen, ShieldCheck
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 
 export default function MarketNews({ onConsultAdvisor }) {
-  const { user } = useAuth();
   const [news, setNews] = useState([]);
   const [repoOverview, setRepoOverview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -302,7 +300,7 @@ export default function MarketNews({ onConsultAdvisor }) {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
           gap: '14px'
         }}>
           <div style={{
@@ -400,7 +398,9 @@ export default function MarketNews({ onConsultAdvisor }) {
             borderRadius: '10px',
             padding: '6px 12px',
             gap: '8px',
-            width: '240px'
+            flex: '1 1 200px',
+            maxWidth: '100%',
+            boxSizing: 'border-box'
           }}>
             <Search size={14} color="var(--text-muted)" />
             <input
@@ -455,7 +455,7 @@ export default function MarketNews({ onConsultAdvisor }) {
           </p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+        <div className="market-news-grid">
           {filteredNews.map((item, idx) => {
             const meta = item.metadata || {};
             const sourceStyle = getSourceBadgeStyle(meta.source);

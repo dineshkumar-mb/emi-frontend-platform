@@ -8,12 +8,6 @@
 const CRITICAL_FLAGS  = new Set(['otp_detected', 'pin_detected', 'cvv_detected', 'suspicious_phishing', 'contains_full_sensitive_id']);
 const NOISE_FLAGS     = new Set(['low_signal', 'ambiguous_source']);
 
-const NEXT_ACTION_MAP = {
-  low:    'confirm_payment',
-  medium: 'flag_for_review',
-  high:   'reject_payment',
-};
-
 /**
  * Compute provider name similarity score (0–60 points).
  */
@@ -156,6 +150,7 @@ export function validatePaymentLocally(parsedPayment, matchedLoan, engineUsed = 
     : (validated ? 'confirm_payment' : 'flag_for_review');
 
   return {
+    engine: engineUsed,
     validated,
     riskLevel,
     linkedLoanConfidence: linkedConf,

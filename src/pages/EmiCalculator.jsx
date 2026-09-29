@@ -1,10 +1,22 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { calculateEMI, getAmortizationSchedule } from '../utils/emiCalc';
 import { exportSingleSchedule } from '../utils/excelExport';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { Calculator, IndianRupee, DollarSign, Euro, PoundSterling, Coins, Calendar, Percent, Download, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { formatCurrency, getGeoConfig } from '../utils/geoConfig';
+import { formatCurrency } from '../utils/geoConfig';
+
+const CurrencyIcon = ({ geoCode, size, color }) => {
+  switch (geoCode) {
+    case 'US': return <DollarSign size={size} color={color} />;
+    case 'GB': return <PoundSterling size={size} color={color} />;
+    case 'EU': return <Euro size={size} color={color} />;
+    case 'AE': return <Coins size={size} color={color} />;
+    case 'IN':
+    default:
+      return <IndianRupee size={size} color={color} />;
+  }
+};
 
 export default function EmiCalculator({ inputs }) {
   const { user } = useAuth();
@@ -14,18 +26,6 @@ export default function EmiCalculator({ inputs }) {
   const [interestRate, setInterestRate] = useState(10.5);
   const [tenure, setTenure] = useState(36); // in months
   const [showSchedule, setShowSchedule] = useState(false);
-
-  const CurrencyIcon = ({ size, color }) => {
-    switch (geoCode) {
-      case 'US': return <DollarSign size={size} color={color} />;
-      case 'GB': return <PoundSterling size={size} color={color} />;
-      case 'EU': return <Euro size={size} color={color} />;
-      case 'AE': return <Coins size={size} color={color} />;
-      case 'IN':
-      default:
-        return <IndianRupee size={size} color={color} />;
-    }
-  };
 
   // Sync with prop values reactively (e.g. from PDF uploads or Dashboard "Analyze")
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function EmiCalculator({ inputs }) {
           <div className="form-group" style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600, fontSize: '0.88rem' }}>
               <span className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <CurrencyIcon size={13} /> Principal Amount
+                <CurrencyIcon geoCode={geoCode} size={13} /> Principal Amount
               </span>
               <span style={{ color: 'var(--color-brand)', fontWeight: 800 }}>
                 {formatCurrency(principal, geoCode)}
@@ -211,7 +211,7 @@ export default function EmiCalculator({ inputs }) {
             </div>
 
             {/* Stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '10px' }}>
+            <div className="form-row-2col" style={{ gap: '14px', marginBottom: '10px' }}>
               <div style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.12)', borderRadius: '10px', padding: '14px' }}>
                 <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Principal Amount</p>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: 700, marginTop: '4px', color: 'var(--color-brand)' }}>{formatCurrency(principal, geoCode)}</h4>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Calendar, HelpCircle, Flame, Snowflake, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -210,7 +210,7 @@ export default function DebtForecast() {
               {selectedStrategy === 'normal' && 'The standard method where you pay the minimum due payments monthly, taking the longest time and paying the most interest.'}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div className="form-row-2col" style={{ gap: '16px', marginBottom: '20px' }}>
               <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Months Saved</span>
                 <h4 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-success)', marginTop: '4px' }}>

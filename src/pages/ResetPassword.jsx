@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { KeyRound, AlertCircle, CheckCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
-export default function ResetPassword({ resetToken, onLoginSuccess }) {
+export default function ResetPassword({ resetToken }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

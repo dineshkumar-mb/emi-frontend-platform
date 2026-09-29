@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Sparkles,
   Send,
@@ -6,15 +6,11 @@ import {
   ArrowRight,
   TrendingDown,
   CheckCircle,
-  Filter,
-  Bell,
   LineChart,
   Info,
-  Check,
-  AlertCircle,
   BookOpen,
-  Trash2,
-  Upload,
+  Filter,
+  Bell,
   FileText
 } from 'lucide-react';
 
@@ -40,22 +36,20 @@ export default function AiAdvisor({ initialQuery = '' }) {
   // RAG States
   const [useRag, setUseRag] = useState(Boolean(initialQuery));
   const [documents, setDocuments] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialQuery) {
       setQuery(initialQuery);
       setUseRag(true);
     }
   }, [initialQuery]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchDocuments();
   }, []);
 
   // Background polling for documents in 'processing' state
-  React.useEffect(() => {
+  useEffect(() => {
     const hasProcessing = documents.some(doc => doc.status === 'processing');
     if (hasProcessing) {
       const timer = setTimeout(() => {
@@ -77,62 +71,7 @@ export default function AiAdvisor({ initialQuery = '' }) {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
 
-    setUploading(true);
-    setUploadError(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const res = await fetch('/api/intelligence/documents', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (res.ok) {
-        await fetchDocuments();
-      } else {
-        const errData = await res.json();
-        setUploadError(errData.message || 'Failed to upload document.');
-      }
-    } catch (err) {
-      setUploadError('Error uploading document: ' + err.message);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
-    try {
-      const res = await fetch(`/api/intelligence/documents/${id}`, {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setDocuments((prev) => prev.filter((doc) => doc._id !== id));
-      }
-    } catch (err) {
-      console.error('Error deleting document:', err);
-    }
-  };
-
-  const handleResetDocuments = async () => {
-    if (!window.confirm('Are you sure you want to delete all uploaded documents? This cannot be undone.')) return;
-    try {
-      const res = await fetch('/api/intelligence/documents', {
-        method: 'DELETE',
-      });
-      if (res.ok) {
-        setDocuments([]);
-      }
-    } catch (err) {
-      console.error('Error resetting documents:', err);
-    }
-  };
 
   const handleSend = async (textToSend) => {
     const messageText = textToSend || query;
@@ -223,7 +162,7 @@ export default function AiAdvisor({ initialQuery = '' }) {
           </div>
         );
 
-      case 'CREATE_REPAYMENT_PLAN':
+      case 'CREATE_REPAYMENT_PLAN': {
         const chartData = actionData.chartData || [];
         // Generate SVG points for the line graph
         let svgPoints = '';
@@ -245,7 +184,7 @@ export default function AiAdvisor({ initialQuery = '' }) {
               <span style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Copilot Amortization Engine</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+            <div className="form-row-2col" style={{ gap: '10px', marginBottom: '14px' }}>
               <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
                 <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'block', textTransform: 'uppercase' }}>Months to Debt-Free</span>
                 <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-brand)' }}>{actionData.monthsToDebtFree} Months</span>
@@ -290,6 +229,7 @@ export default function AiAdvisor({ initialQuery = '' }) {
             </div>
           </div>
         );
+      }
 
       case 'SET_EMI_ALERT':
         return (
@@ -512,7 +452,7 @@ export default function AiAdvisor({ initialQuery = '' }) {
                 {simulations.map((sim, i) => (
                   <div key={i} style={{ background: 'rgba(245,158,11,0.03)', border: '1px solid rgba(245,158,11,0.15)', padding: '16px', borderRadius: '10px' }}>
                     <h4 style={{ fontWeight: 700, fontSize: '0.92rem', color: '#f59e0b', marginBottom: '8px' }}>{sim.description}</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="form-row-2col" style={{ gap: '10px' }}>
                       <div>
                         <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Interest Saved</span>
                         <p style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-success)', marginTop: '2px' }}>₹{sim.interestSaved.toLocaleString()}</p>

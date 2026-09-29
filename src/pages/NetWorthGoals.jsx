@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Landmark, TrendingUp, CheckCircle, Plus, Trash2, ArrowRight, HelpCircle, Target } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Landmark, TrendingUp, Plus, Trash2, Target } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/geoConfig';
 
@@ -171,8 +171,8 @@ export default function NetWorthGoals() {
 
       {/* Forms Modals */}
       {activeForm === 'asset' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'var(--bg-secondary)' }}>
+        <div className="modal-overlay">
+          <div className="modal-panel animate-fade-in" style={{ maxWidth: '440px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Record Asset Holding</h3>
               <button onClick={() => setActiveForm(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>✕</button>
@@ -192,8 +192,8 @@ export default function NetWorthGoals() {
       )}
 
       {activeForm === 'goal' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '440px', padding: '30px', background: 'var(--bg-secondary)' }}>
+        <div className="modal-overlay">
+          <div className="modal-panel animate-fade-in" style={{ maxWidth: '440px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Create Saving Goal</h3>
               <button onClick={() => setActiveForm(null)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>✕</button>
@@ -205,7 +205,7 @@ export default function NetWorthGoals() {
                   {['House Purchase', 'Car Purchase', 'Marriage Fund', 'Emergency Fund', 'Retirement Fund', 'Vacation Fund', 'Other'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div className="form-row-2col" style={{ gap: '14px' }}>
                 <div className="form-group"><label className="form-label">Target Amount</label><input type="number" className="form-input" placeholder="e.g. 500000" value={goalTargetAmount} onChange={e => setGoalTargetAmount(e.target.value)} required min={1} /></div>
                 <div className="form-group"><label className="form-label">Current Saved</label><input type="number" className="form-input" placeholder="e.g. 50000" value={goalCurrentAmount} onChange={e => setGoalCurrentAmount(e.target.value)} min={0} /></div>
               </div>

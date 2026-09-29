@@ -1,25 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   Landmark, 
   Shield, 
   CheckCircle, 
-  RefreshCw, 
-  UserCheck, 
   Link2, 
   Loader2, 
   AlertCircle, 
   ArrowRight, 
   Lock, 
   Check, 
-  ChevronRight, 
-  Info,
-  DollarSign,
-  TrendingDown
+  Info
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function BankConnect() {
-  const { user, refreshUser } = useAuth();
+  const { refreshUser } = useAuth();
   
   // State variables
   const [vua, setVua] = useState('');
@@ -33,14 +28,6 @@ export default function BankConnect() {
   const [showSimulator, setShowSimulator] = useState(false);
   const [syncingData, setSyncingData] = useState(false);
   const [syncedResults, setSyncedResults] = useState(null);
-
-  // Hardcoded list of supported Consent Managers & Banks
-  const consentManagers = [
-    { id: 'finvu', name: 'FinVu Consent Manager', suffix: '@finvu' },
-    { id: 'sahamati', name: 'Sahamati Sandbox', suffix: '@sahamati' },
-    { id: 'onemoney', name: 'OneMoney Manager', suffix: '@onemoney' },
-    { id: 'anumati', name: 'Anumati Aggregator', suffix: '@anumati' }
-  ];
 
   const popularBanks = [
     { id: 'hdfc', name: 'HDFC Bank', code: 'HDFC', logoColor: '#1e40af' },
@@ -63,7 +50,6 @@ export default function BankConnect() {
 
     setLoading(true);
     setError('');
-    setSuccessMsg('');
 
     try {
       const res = await fetch('/api/consent/request', {
@@ -177,7 +163,7 @@ export default function BankConnect() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: syncedResults ? '1fr' : '1.3fr 1fr', gap: '30px', alignItems: 'start', marginTop: '10px' }}>
+      <div className={syncedResults ? "bank-connect-grid single-col" : "bank-connect-grid"}>
         
         {/* Main Flow Card */}
         <div className="card" style={{ padding: '30px' }}>
@@ -200,11 +186,18 @@ export default function BankConnect() {
                 </div>
               )}
 
+              {successMsg && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.15)', borderRadius: '10px', color: 'var(--color-success)', fontSize: '0.88rem', marginBottom: '20px' }}>
+                  <CheckCircle size={18} />
+                  <span>{successMsg}</span>
+                </div>
+              )}
+
               <form onSubmit={handleRequestConsent}>
                 {/* Bank Selector */}
                 <div className="form-group" style={{ marginBottom: '20px' }}>
                   <label className="form-label">Step 1: Select Financial Institution (FIP)</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '6px' }}>
+                  <div className="bank-selector-grid">
                     {popularBanks.map((bank) => (
                       <div 
                         key={bank.id}
@@ -408,21 +401,8 @@ export default function BankConnect() {
 
       {/* AA SIMULATOR DIALOG / MODAL (RBI Sandbox Simulation) */}
       {showSimulator && currentConsent && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div className="card animate-fade-in" style={{ width: '100%', maxWidth: '500px', background: '#0e1726', border: '2px solid var(--color-brand)', borderRadius: '20px', overflow: 'hidden' }}>
+        <div className="modal-overlay">
+          <div className="card modal-panel animate-fade-in" style={{ width: '100%', maxWidth: '500px', background: '#0e1726', border: '2px solid var(--color-brand)', overflow: 'hidden', padding: 0 }}>
             
             {/* Header */}
             <div style={{ background: 'var(--gradient-brand)', padding: '24px', color: '#fff', textAlign: 'center', position: 'relative' }}>

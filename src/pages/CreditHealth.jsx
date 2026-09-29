@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, ShieldAlert, CheckCircle, Info, Landmark, Download, Mail } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
+import { ShieldAlert, Download, Mail } from 'lucide-react';
 
 export default function CreditHealth() {
-  const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -185,7 +183,7 @@ export default function CreditHealth() {
           {/* Stability Indicators */}
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '16px' }}>Risk Intelligence Indices</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className="form-row-2col" style={{ gap: '16px' }}>
               <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Default Risk</span>
                 <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: defaultRisk === 'High' ? 'var(--color-danger)' : 'var(--color-success)', marginTop: '4px' }}>

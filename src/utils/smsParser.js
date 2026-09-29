@@ -168,10 +168,10 @@ function extractRefId(text) {
 
 function extractDate(text) {
   const patterns = [
-    /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,
+    /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/,
     /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s*\d{2,4})/i,
-    /(\d{4}[\/\-]\d{2}[\/\-]\d{2})/,
-    /(?:on\s+)(\d{1,2}[\-\/]\w+[\-\/]\d{2,4})/i,
+    /(\d{4}[/-]\d{2}[/-]\d{2})/,
+    /(?:on\s+)(\d{1,2}[-/]\w+[-/]\d{2,4})/i,
   ];
   for (const p of patterns) {
     const m = text.match(p);
@@ -180,8 +180,8 @@ function extractDate(text) {
   return null;
 }
 
-function classifyTransactionType(text, isUpi, isEmiRelated) {
-  const lower = text.toLowerCase();
+function classifyTransactionType(text, isUpi, emiSignal = false) {
+  if (emiSignal) return 'loan_payment';
   if (/auto.?(?:debit|pay|payment)/i.test(text)) return 'autopay';
   if (/\bemi\b/i.test(text)) return 'loan_payment';
   if (/\brepayment\b|\binstall?ment\b/i.test(text)) return 'loan_payment';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShieldAlert, ShieldCheck, AlertTriangle, Zap, Link, CreditCard, ArrowUpDown, CheckCircle2, Clock, RefreshCw, Scan } from 'lucide-react';
 
 const THREAT_META = {
@@ -52,14 +52,8 @@ function ScanTestModal({ onClose, onSubmit, loading }) {
   const [provider, setProvider] = useState('');
 
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex',
-      alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)'
-    }}>
-      <div style={{
-        background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px',
-        padding: '28px', width: '100%', maxWidth: '520px', margin: '0 16px'
-      }}>
+    <div className="modal-overlay">
+      <div className="modal-panel animate-fade-in" style={{ maxWidth: '520px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
           <div style={{ background: 'rgba(99,102,241,0.12)', borderRadius: '10px', padding: '8px', display: 'flex' }}>
             <Scan color="#6366f1" size={20} />
@@ -87,7 +81,7 @@ function ScanTestModal({ onClose, onSubmit, loading }) {
               }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div className="form-row-2col" style={{ gap: '12px' }}>
             <div style={{ flex: 1 }}>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                 Amount (₹)
@@ -377,7 +371,7 @@ export default function FraudAlerts() {
                   opacity: isResolved ? 0.7 : 1,
                 }}
               >
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                   {/* Threat icon */}
                   <div style={{ background: meta.bg, borderRadius: '10px', padding: '10px', display: 'flex', flexShrink: 0 }}>
                     <ThreatIcon color={meta.color} size={20} />

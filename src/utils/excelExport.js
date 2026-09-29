@@ -5,9 +5,6 @@
 import * as XLSX from 'xlsx';
 import { getAmortizationSchedule } from './emiCalc';
 
-const currencyFmt = (val) =>
-  typeof val === 'number' ? `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : val;
-
 /**
  * Build Sheet 1: Portfolio Summary
  */

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -13,10 +13,9 @@ import NetWorthGoals from './pages/NetWorthGoals';
 import SubscriptionsExpenses from './pages/SubscriptionsExpenses';
 import FraudAlerts from './pages/FraudAlerts';
 import MarketNews from './pages/MarketNews';
-import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check, Sun, Moon, Newspaper } from 'lucide-react';
-import { GEO_CONFIGS } from './utils/geoConfig';
-
-
+import Transactions from './pages/Transactions';
+import BankConnect from './pages/BankConnect';
+import { Landmark, LogOut, LayoutDashboard, Calculator as CalcIcon, Menu, X, Globe, Sparkles, TrendingUp, ShieldAlert, Coins, RefreshCw, ChevronDown, Copy, Check, Sun, Moon, Newspaper, Receipt, Link2 } from 'lucide-react';
 
 function AppContent() {
   const { user, loading, logout, refreshUser } = useAuth();
@@ -27,8 +26,14 @@ function AppContent() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
-  const [authView, setAuthView] = useState('login');
-  const [resetToken, setResetToken] = useState(null);
+  const [resetToken] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('resetToken') || null;
+  });
+  const [authView, setAuthView] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('resetToken') ? 'reset-password' : 'login';
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [calculatorInputs, setCalculatorInputs] = useState(null);
   const [advisorInitialQuery, setAdvisorInitialQuery] = useState('');
@@ -42,12 +47,6 @@ function AppContent() {
   const profileDropdownRef = useRef(null);
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('resetToken');
-    if (token) {
-      setResetToken(token);
-      setAuthView('reset-password');
-    }
 
     function handleClickOutside(event) {
       if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(event.target)) {
@@ -76,7 +75,7 @@ function AppContent() {
     }
   };
 
-  const isToolActive = ['net-worth', 'subscriptions', 'fraud', 'calculator'].includes(activeTab);
+  const isToolActive = ['net-worth', 'subscriptions', 'fraud', 'calculator', 'transactions', 'bank-connect'].includes(activeTab);
 
   if (loading) {
     return (
@@ -165,6 +164,18 @@ function AppContent() {
                   className={`dropdown-item ${activeTab === 'fraud' ? 'active' : ''}`}
                 >
                   <ShieldAlert size={14} /> Security
+                </button>
+                <button 
+                  onClick={() => handleTabChange('transactions')}
+                  className={`dropdown-item ${activeTab === 'transactions' ? 'active' : ''}`}
+                >
+                  <Receipt size={14} /> Transactions
+                </button>
+                <button 
+                  onClick={() => handleTabChange('bank-connect')}
+                  className={`dropdown-item ${activeTab === 'bank-connect' ? 'active' : ''}`}
+                >
+                  <Link2 size={14} /> Bank Connect
                 </button>
                 <button 
                   onClick={() => handleTabChange('calculator')}
@@ -344,6 +355,18 @@ function AppContent() {
             <ShieldAlert size={18} /> Security
           </button>
           <button
+            className={`nav-mobile-item ${activeTab === 'transactions' ? 'active' : ''}`}
+            onClick={() => handleTabChange('transactions')}
+          >
+            <Receipt size={18} /> Transactions
+          </button>
+          <button
+            className={`nav-mobile-item ${activeTab === 'bank-connect' ? 'active' : ''}`}
+            onClick={() => handleTabChange('bank-connect')}
+          >
+            <Link2 size={18} /> Bank Connect
+          </button>
+          <button
             className={`nav-mobile-item ${activeTab === 'calculator' ? 'active' : ''}`}
             onClick={() => handleTabChange('calculator')}
           >
@@ -450,6 +473,8 @@ function AppContent() {
         {activeTab === 'subscriptions' && <SubscriptionsExpenses />}
         {activeTab === 'fraud' && <FraudAlerts />}
         {activeTab === 'calculator' && <EmiCalculator inputs={calculatorInputs} />}
+        {activeTab === 'transactions' && <Transactions />}
+        {activeTab === 'bank-connect' && <BankConnect />}
       </main>
     </div>
   );

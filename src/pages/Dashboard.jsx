@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { 
-  TrendingUp, Calendar, ShieldAlert, Plus, Trash2, Sparkles, Info, X,
+  TrendingUp, Calendar, ShieldAlert, Plus, Trash2, Sparkles, X,
   Calculator, HelpCircle, FileText, Send, SendHorizontal, Download,
   Clipboard, CheckCircle2, AlertCircle, Smartphone, Zap, Shield,
   RefreshCw, CreditCard, Repeat, Activity, Eye, EyeOff,
@@ -51,7 +51,6 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [healthData, setHealthData] = useState(null);
-  const [healthLoading, setHealthLoading] = useState(false);
   const [repoRateData, setRepoRateData] = useState(null);
 
   useEffect(() => {
@@ -308,7 +307,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
       const data = await r.json();
       setAutopayMessage(data.message || 'Simulation triggered.');
       fetchNotificationData();
-    } catch (err) {
+    } catch {
       setAutopayMessage('Failed to trigger autopay simulation.');
     } finally {
       setAutopaySimulating(false);
@@ -320,7 +319,6 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      setHealthLoading(true);
       const [rLoans, rPayments, rStats, rNotifications, rHealth] = await Promise.all([
         fetch('/api/loans'),
         fetch('/api/loans/payments'),
@@ -345,7 +343,6 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
       setError('Server connection lost.');
     } finally {
       setLoading(false);
-      setHealthLoading(false);
     }
   };
 
@@ -620,7 +617,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
 
   // ── Computed Stats ─────────────────────────────────────────────────────────
 
-  const stats = React.useMemo(() => {
+  const stats = useMemo(() => {
     const totalOutstanding = loans.reduce((s, l) => s + l.outstandingBalance, 0);
     const monthlyEmi = loans.reduce((s, l) => s + l.emiAmount, 0);
     let earliestDue = null;
@@ -646,7 +643,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
         const nextDue = loan.nextDueDate ? new Date(loan.nextDueDate) : new Date();
         const emi = loan.emiAmount || (loan.outstandingBalance / 12) || 1;
         const annualRate = loan.interestRate || 0;
-        let remainingMonths = 1;
+        let remainingMonths;
 
         if (annualRate > 0) {
           const r = annualRate / 12 / 100;
@@ -693,8 +690,8 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
     };
   }, [loans, payments, historyStats]);
 
-  const barChartData = React.useMemo(() => loans.map(l => ({ name: l.provider.split(' ')[0], EMI: l.emiAmount })), [loans]);
-  const pieChartData = React.useMemo(() => {
+  const barChartData = useMemo(() => loans.map(l => ({ name: l.provider.split(' ')[0], EMI: l.emiAmount })), [loans]);
+  const pieChartData = useMemo(() => {
     const cats = {}; loans.forEach(l => { cats[l.loanType] = (cats[l.loanType] || 0) + l.principal; });
     return Object.keys(cats).map(k => ({ name: k, value: cats[k] }));
   }, [loans]);
@@ -807,7 +804,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
       </div>
 
       {/* Metric Cards */}
-      <div className="metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+      <div className="metrics-grid">
         {[
           { label:'Total Outstanding', value:formatCurrency(stats.totalOutstanding, user?.geo || 'IN'), icon:<TrendingUp size={16}/>, sub:'Outstanding principal balance', color:'var(--text-primary)' },
           { label:'Monthly EMI Outflow', value:formatCurrency(stats.monthlyEmi, user?.geo || 'IN'), icon:<Calendar size={16}/>, sub:'Total monthly payments', color:'var(--color-brand)' },
@@ -1082,7 +1079,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
                 <div style={{ display:'flex', flexDirection:'column', justifyContent:'center' }}>
                   {prepayResult ? (
                     <div className="animate-fade-in" style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+                      <div className="form-row-2col" style={{ gap:'16px' }}>
                         <div style={{ background:'rgba(16,185,129,0.05)', border:'1px solid rgba(16,185,129,0.15)', borderRadius:'10px', padding:'16px', textAlign:'center' }}>
                           <p style={{ fontSize:'0.72rem', color:'var(--text-secondary)', textTransform:'uppercase' }}>Interest Saved</p>
                           <h3 style={{ fontSize:'1.45rem', fontWeight:800, color:'var(--color-success)', marginTop:'4px' }}>{formatCurrency(prepayResult.savings.interestSaved, user?.geo || 'IN')}</h3>
@@ -1109,7 +1106,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
           )}
 
           {/* AI Insights & Recent Notifications */}
-          <div className="grid-2-col" style={{ marginTop: '30px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          <div className="grid-2-col" style={{ marginTop: '30px' }}>
             {/* AI Insights Widget */}
             <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1219,7 +1216,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '24px' }}>
           {/* Settings and Channels Column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Preferences Toggles */}
@@ -1368,7 +1365,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
                       {loans.map(l => <option key={l._id} value={l._id}>{l.provider} ({l.loanType})</option>)}
                     </select>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="form-row-2col" style={{ gap: '10px' }}>
                     <div className="form-group">
                       <label className="form-label" style={{ fontSize: '0.72rem' }}>Status</label>
                       <select value={autopayStatus} onChange={e => setAutopayStatus(e.target.value)} style={{ width: '100%' }}>
@@ -1462,11 +1459,11 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
                   {['Personal Loan','Home Loan','Vehicle Loan','Education Loan','Credit Card EMI','BNPL','Gold Loan','Business Loan','Other'].map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+              <div className="form-row-2col" style={{ gap:'16px' }}>
                 <div className="form-group"><label className="form-label">Principal ({getGeoConfig(user?.geo || 'IN').symbol})</label><input type="number" className="form-input" placeholder="e.g. 1500000" value={principal} onChange={e => setPrincipal(e.target.value)} required min={1}/></div>
                 <div className="form-group"><label className="form-label">Interest Rate (% p.a.)</label><input type="number" step="0.01" className="form-input" placeholder="e.g. 8.5" value={interestRate} onChange={e => setInterestRate(e.target.value)} required min={0.1}/></div>
               </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px' }}>
+              <div className="form-row-2col" style={{ gap:'16px' }}>
                 <div className="form-group"><label className="form-label">Tenure (Months)</label><input type="number" className="form-input" placeholder="e.g. 180" value={tenure} onChange={e => setTenure(e.target.value)} required min={1}/></div>
                 <div className="form-group"><label className="form-label">Next Due Date</label><input type="date" className="form-input" value={nextDueDate} onChange={e => setNextDueDate(e.target.value)} required/></div>
               </div>
@@ -1610,7 +1607,7 @@ export default function Dashboard({ onSendToCalculator, onNavigateToNews }) {
                     </div>
 
                     {/* Parsed fields grid */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px', marginBottom:'14px' }}>
+                    <div className="form-row-2col" style={{ gap:'8px', marginBottom:'14px' }}>
                       {[
                         { label:'Amount', value: activeParsed.amount ? `₹${activeParsed.amount.toLocaleString('en-IN')}` : null, color:'var(--color-success)' },
                         { label:'Provider / Bank', value: activeParsed.provider || activeParsed.merchantOrBank, color:'var(--text-primary)' },

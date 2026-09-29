@@ -1,6 +1,19 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 
 const AuthContext = createContext(null);
+
+const parseResponsePayload = async (response, defaultMsg) => {
+  try {
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      return await response.json();
+    }
+    const text = await response.text();
+    return { message: text || `${defaultMsg} (HTTP ${response.status})` };
+  } catch {
+    return { message: `${defaultMsg} (HTTP ${response.status})` };
+  }
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -10,8 +23,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await fetch('/api/auth/profile');
       if (response.ok) {
-        const data = await response.json();
-        setUser(data);
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await response.json();
+          setUser(data);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -35,11 +53,11 @@ export const AuthProvider = ({ children }) => {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Login failed');
+      const errorData = await parseResponsePayload(response, 'Login failed');
+      throw new Error(errorData.message || `Login failed (${response.status})`);
     }
     
-    const data = await response.json();
+    const data = await parseResponsePayload(response, 'Unexpected response format');
     setUser(data);
     return data;
   };
@@ -58,11 +76,11 @@ export const AuthProvider = ({ children }) => {
     });
     
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Signup failed');
+      const errorData = await parseResponsePayload(response, 'Signup failed');
+      throw new Error(errorData.message || `Signup failed (${response.status})`);
     }
     
-    const data = await response.json();
+    const data = await parseResponsePayload(response, 'Unexpected response format');
     setUser(data);
     return data;
   };

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowDownLeft, ArrowUpRight, Plus, Trash2, RefreshCw,
-  Filter, Search, Calendar, Receipt, TrendingDown, TrendingUp,
+  Search, Calendar, Receipt, TrendingDown, TrendingUp,
   ShoppingBag, Coffee, Fuel, Smartphone, Activity, Zap,
   X, DollarSign
 } from 'lucide-react';
@@ -29,14 +29,14 @@ const CATEGORY_META = {
   Other: { icon: Receipt, color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
 };
 
-function AddTransactionModal({ onClose, onSave, loading, geo }) {
+function AddTransactionModal({ onClose, onSave, loading }) {
   const [form, setForm] = useState({ description: '', category: 'Food', amount: '', type: 'debit', date: new Date().toISOString().split('T')[0] });
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(6px)' }}>
-      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '18px', padding: '28px', width: '100%', maxWidth: '440px', margin: '0 16px' }}>
+    <div className="modal-overlay">
+      <div className="modal-panel animate-fade-in" style={{ maxWidth: '440px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
           <h3 style={{ color: 'var(--text-primary)', margin: 0, fontWeight: 800, fontSize: '1.1rem' }}>Add Transaction</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
@@ -49,14 +49,14 @@ function AddTransactionModal({ onClose, onSave, loading, geo }) {
             <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description *</label>
             <input className="form-input" value={form.description} onChange={e => set('description', e.target.value)} placeholder="e.g. Grocery at BigBazaar" />
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <div style={{ flex: 1 }}>
+          <div className="form-row-2col" style={{ gap: '12px' }}>
+            <div>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</label>
               <select className="form-input" value={form.category} onChange={e => set('category', e.target.value)}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</label>
               <select className="form-input" value={form.type} onChange={e => set('type', e.target.value)}>
                 <option value="debit">Expense (Debit)</option>
@@ -64,12 +64,12 @@ function AddTransactionModal({ onClose, onSave, loading, geo }) {
               </select>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <div style={{ flex: 1 }}>
+          <div className="form-row-2col" style={{ gap: '12px' }}>
+            <div>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount *</label>
               <input className="form-input" type="number" value={form.amount} onChange={e => set('amount', e.target.value)} placeholder="0.00" min="0" />
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <label style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</label>
               <input className="form-input" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
             </div>

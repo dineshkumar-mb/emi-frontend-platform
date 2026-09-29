@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
@@ -107,7 +107,7 @@ export default function Signup({ onToggleAuth }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="form-row-2col" style={{ gap: '16px' }}>
             <div className="form-group">
               <label className="form-label">Monthly Income (₹)</label>
               <input 
